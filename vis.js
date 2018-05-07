@@ -69,8 +69,8 @@ function createVis(errors, spotify_data)
 	console.log(genre_stream_counts);
 
 	countries = get_list_of_countries(spotify_data).sort();
-	createLineChart(spotify_data, genres[0], country_colours, months);
 	createCountriesSelectionDiv(countries);
+	createLineChart(spotify_data, genres[0], genre_colours[0]);
 	createGenreChart(spotify_data, genres, genre_colours, genre_stream_counts);
 
 	var countries_div = document.getElementById("countries_selection");
@@ -92,7 +92,7 @@ function createVis(errors, spotify_data)
 				d.disabled = false;
 			});
 		}
-		createLineChart(spotify_data, genres[0], country_colours, months)
+		createLineChart(spotify_data, genres[0], genre_colours[0])
 	}
 
 }
@@ -145,6 +145,8 @@ function createCountriesSelectionDiv(countries){
 		checkbox.name = countries[i];
 		checkbox.value = countries[i];
 		checkbox.id = countries[i];
+		if (countries[i]=="Ecuador")
+			checkbox.checked = true;
 	
 		var label = document.createElement('label')
 		label.htmlFor = countries[i];
@@ -158,17 +160,8 @@ function createCountriesSelectionDiv(countries){
 	}
 
 }
-function create_dataset(n_points){
-	var data_points = []
-	
-	for (i=0; i<n_points; i++){
-		
-		data_points.push(Math.floor((Math.random() * 10000) + 1000))
-	}
 
-	return data_points;
-}
-function createLineChart(spotify_data, genre){
+function createLineChart(spotify_data, genre, genre_colour){
 	// set the dimensions and margins of the graph
 	var country_colours = ["#3e4444", "#82b74b", "#405d27", "#c1946a", "#e6e2d3"];
 	
@@ -205,7 +198,7 @@ function createLineChart(spotify_data, genre){
 
 	var div_id = "#line_chart"
 	var margin = {top: 20, right: 65, bottom: 30, left: 60},
-	    width = 970 - margin.left - margin.right,
+	    width = 870 - margin.left - margin.right,
 	    height = 500 - margin.top - margin.bottom;
 
 
@@ -282,19 +275,36 @@ function createLineChart(spotify_data, genre){
 
 
     //Add y axis label
-    var y_label = svg.selectAll("text.label").data(["# of Streams"])
+    var y_label = svg.selectAll("text.label").data(["# of Streams (/10000)"])
 
 	      
     y_label.enter().append("text")
         .attr("transform", "translate("+ 0 + "," + (margin.top - margin.bottom) + ")")
         .attr('font-size', 13)
-        .text("# of Streams");
+        .text("# of Streams (/10000)");
 
+
+    addText("#line_chart", genre.toUpperCase(), genre_colour, (height/2) + margin.top , (width/2) + margin.left)
+}
+function addText(div_id, text, text_colour, y, x){
+	//Add title text
+	var svg = d3.select(div_id+ " svg")
+    var title = svg.selectAll("text.label").data([text])
+
+	      
+    title.enter().append("text")
+        .attr("transform", "translate("+ x + "," + y  + ")")
+        .attr('font-size', 40)
+        .attr('fill', text_colour)
+        .attr('opacity', 0.4)
+        .text(text);
 }
 function createGenreChart(spotify_data, genres, genre_colours, dataset){
 	// call your own functions from here, or embed code here
-	var margin = {top: 30, right: 50, bottom: 30, left:0};
-	var width = 800  - margin.left - margin.right,
+	var selected = "Pop";
+	var selected_index = 0;
+	var margin = {top: 45, right: 50, bottom: 30, left:0};
+	var width = 700  - margin.left - margin.right,
 	  height = 500 - margin.top - margin.bottom;
 
 	var div = document.getElementById("genre_plot");
@@ -324,7 +334,7 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 
 	var tool_tip = d3.tip()
 		.attr("class", "d3-tip")
-		.offset([0, 50])
+		.offset([0, 40])
 		.html("<div id='mySVGtooltip'></div>");
 
 	svg.call(tool_tip);
@@ -333,6 +343,7 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 		.data(genres)
 		.enter().append("circle")
 		.attr("r", function(d){
+			
 			d = dataset[d.toLowerCase()] 
 			console.log(d);
 			return r_scale(d);
@@ -346,15 +357,18 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 			return x_scale(i)+r_scale(d) + margin.left;
 		})
 		.attr("fill", function(d, i){
+			
 			return genre_colours[i];
 
 		})
 		.attr("opacity", 0.8)
 		.on("mouseover", function(d, i){
-			
+			selected_index = 0;
+			selected = d;
+
 			tool_tip.show();
 			var tool_tip_w = 150,
-				tool_tip_h = 80;
+				tool_tip_h = 70;
 
 
 			var tooltipSVG = d3.select("#mySVGtooltip")
@@ -370,6 +384,7 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 					.attr("y", 20)
 					.attr("dy", ".35em")
 					.style("fill", "white")
+					.style('font-size', 15)
 					.text("\n Genre: "+genres[i]);
 					
 
@@ -378,12 +393,16 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 					.attr("x", 5)
 					.attr("y", 40)
 					.attr("dy", ".35em")
-					.style("fill", "white")		
-					.text("Streams: "+dataset[d.toLowerCase()] );
+					.style("fill", "white")	
+					.style('font-size', 15)	
+					.text("Streams: "+dataset[d.toLowerCase()]);
 
-			createLineChart(spotify_data, genres[i])
+			createLineChart(spotify_data, genres[i], genre_colours[i])
+
+			
 
 		})
+
 
 
 	// // Add the X Axis
@@ -404,7 +423,8 @@ function createGenreChart(spotify_data, genres, genre_colours, dataset){
 // uncomment the cdn.rawgit.com versions and comment the cis.umassd.edu versions if you require all https data
 d3.queue()
     //.defer(d3.csv, "https://archive.org/download/cleaned_data/cleaned_data.csv")
-    .defer(d3.csv, "https://query.data.world/s/shd2uyourazdpttig4vqh5jvp5cf6d")
+    //.defer(d3.csv, "https://query.data.world/s/shd2uyourazdpttig4vqh5jvp5cf6d")
     //.defer(d3.csv, "https://query.data.world/s/sj4dq52f3gfho7ouikgmuq3bzzmr4q")
+    .defer(d3.csv, "https://query.data.world/s/ojhvga3efn4pnklwdfye5m322t4gms")
     .await(createVis);
 
