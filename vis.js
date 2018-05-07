@@ -65,9 +65,13 @@ function createVis(errors, spotify_data)
 	
 	var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+	var genre_stream_counts = get_stream_counts(spotify_data, genres)
+	console.log(genre_stream_counts);
+
+	countries = get_list_of_countries(spotify_data).sort();
 	createLineChart(spotify_data, genres[0], country_colours, months);
 	createCountriesSelectionDiv(countries);
-	createGenreChart(spotify_data, genres, genre_colours);
+	createGenreChart(spotify_data, genres, genre_colours, genre_stream_counts);
 
 	var countries_div = document.getElementById("countries_selection");
 	countries_div.onchange = function(){
@@ -91,6 +95,33 @@ function createVis(errors, spotify_data)
 		createLineChart(spotify_data, genres[0], country_colours, months)
 	}
 
+}
+
+function get_list_of_countries(spotify_data){
+	countries = {}
+
+	spotify_data.forEach(function(d){
+		countries[d['Region']] = 0
+	});
+
+	return Object.keys(countries);
+
+
+}
+function get_stream_counts(spotify_data, genres){
+	var stream_counts = {}
+	genres.forEach(function(g, i){
+		stream_counts[g.toLowerCase()] = 0;
+	});
+	spotify_data.forEach(function(d,i){
+		genres.forEach(function(g, ind){
+			var genre = g.toLowerCase();
+			if (d['Genres'].indexOf(genre) != -1){
+				stream_counts[genre] += +d['Streams']/10000
+			}
+		});
+	});
+	return stream_counts;
 }
 function createCountriesSelectionDiv(countries){
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
@@ -153,7 +184,7 @@ function createLineChart(spotify_data, genre){
 	var data = {}
 	var genre = genre.toLowerCase()
 	var streams_per_month = {}
-	console.log(genre)
+	
 	countries.forEach(function(country, i){
 		data[country] = []
 		data[country] = spotify_data.filter(each => (each['Region'] == country) && (each['Genres'].indexOf(genre) != -1));
@@ -170,19 +201,13 @@ function createLineChart(spotify_data, genre){
 		});
 		
 	})
-	
-	console.log(data)
-	console.log(streams_per_month)
 
 
 	var div_id = "#line_chart"
-	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+	var margin = {top: 20, right: 65, bottom: 30, left: 60},
 	    width = 970 - margin.left - margin.right,
 	    height = 500 - margin.top - margin.bottom;
 
-	// set the ranges
-	var x = d3.scaleTime().range([0, width]);
-	var y = d3.scaleLinear().range([height, 0]);
 
 	d3.select(div_id+ " svg").remove();
 	var svg = d3.select(div_id)
@@ -195,20 +220,16 @@ function createLineChart(spotify_data, genre){
 
 
 	var x = d3.scaleTime()
-			    .range([0, width-5]);
+			    .range([0, width-5])
+			    .nice();
 
 	var y = d3.scaleLinear()
-				.range([height, 0]);
+				.range([height, 0])
+				.nice();
 
 	x.domain(d3.extent(x_data, function(d) { return parseTime(d) }));
 	
 	for (country_index = 0; country_index < countries.length; country_index++){
-
-		// var streams_per_month = []
-
-		// for (i = 0; i < x_data.length ; i++){
-		// 	streams_per_month.push(Math.floor((Math.random() * 1000) + 10))
-		// }
 
 		var value_line = d3.line() 
 							.x(function(d, i){return x(parseTime(x_data[i])) })
@@ -228,34 +249,73 @@ function createLineChart(spotify_data, genre){
 	}
 
 	// Add the X Axis
+	
 	  svg.append("g")
 	      .attr("transform", "translate(0," + height + ")")
-	      .call(d3.axisBottom(x));
+	      .call(d3.axisBottom(x)
+              .tickFormat(d3.timeFormat("%b")));
 
 	  // Add the Y Axis
 	  svg.append("g")
 	      .call(d3.axisLeft(y));
+
+
+	//Add legend
+	var legend = svg.selectAll("rect.bar").data(countries)
+
+    legend.enter().append("rect")
+        .attr("x", width)
+        .attr("y", function(d,i){return i*12 + 20})
+        .attr("width", 10)
+        .attr("height", 12)
+        .style("fill", function(d, i){return country_colours[i]})
+        .attr("fill-opacity", "0.6")
+
+
+    var legend_text = svg.selectAll("text.label").data(countries)
+
+    legend_text.enter().append("text")
+        .attr('x', width+ 10)
+        .attr("y", function(d,i){return i*12 + 28})
+        .attr('font-size', 10)
+        .text(function(d){return String(d) });
+
+
+    //Add y axis label
+    var y_label = svg.selectAll("text.label").data(["# of Streams"])
+
+	      
+    y_label.enter().append("text")
+        .attr("transform", "translate("+ 0 + "," + (margin.top - margin.bottom) + ")")
+        .attr('font-size', 13)
+        .text("# of Streams");
+
 }
-function createGenreChart(spotify_data, genres, genre_colours){
+function createGenreChart(spotify_data, genres, genre_colours, dataset){
 	// call your own functions from here, or embed code here
-	var margin = {top: 30, right: 50, bottom: 40, left:40};
-	var width = 700  - margin.left - margin.right,
+	var margin = {top: 30, right: 50, bottom: 30, left:0};
+	var width = 800  - margin.left - margin.right,
 	  height = 500 - margin.top - margin.bottom;
 
 	var div = document.getElementById("genre_plot");
 	div.style.marginLeft = "300px";
-   	var dataset = create_dataset(genres.length);
 
    	var x = d3.scalePoint()
    				.range([0, width])
    				.domain(genres);
+
    	var x_scale = d3.scaleLinear()
    				.range([0, width])
    				.domain([0, genres.length]);
+
+   	var r_scale = d3.scaleSqrt()
+   				.range([0, 50])
+   				.domain([d3.min(Object.values(dataset)), d3.max(Object.values(dataset))]);
    	
 	var y = d3.scaleLinear()
 				.range([height, 0])
-				.domain([d3.min(dataset), d3.max(dataset)]);
+				.domain([d3.min(Object.values(dataset)), d3.max(Object.values(dataset))])
+				.nice();
 
 	var svg = d3.select("div#genre_plot").append("svg")
 	  .attr("width", width + margin.left + margin.right)
@@ -270,16 +330,20 @@ function createGenreChart(spotify_data, genres, genre_colours){
 	svg.call(tool_tip);
 
 	svg.selectAll("circle")
-		.data(dataset)
+		.data(genres)
 		.enter().append("circle")
 		.attr("r", function(d){
-			return d*0.005;
+			d = dataset[d.toLowerCase()] 
+			console.log(d);
+			return r_scale(d);
 		})
 		.attr('cy', function(d,i){
+			d = dataset[d.toLowerCase()]
 			return y(d) + margin.top;
 		})
 		.attr('cx', function(d,i){
-			return x_scale(i) + margin.left;
+			d = dataset[d.toLowerCase()] 
+			return x_scale(i)+r_scale(d) + margin.left;
 		})
 		.attr("fill", function(d, i){
 			return genre_colours[i];
@@ -315,22 +379,22 @@ function createGenreChart(spotify_data, genres, genre_colours){
 					.attr("y", 40)
 					.attr("dy", ".35em")
 					.style("fill", "white")		
-					.text("Streams: "+d);
+					.text("Streams: "+dataset[d.toLowerCase()] );
 
 			createLineChart(spotify_data, genres[i])
 
 		})
 
 
-	// Add the X Axis
-	  svg.append("g")
-	      .attr("transform", "translate("+ margin.left + ", " + height + ")")
-	      .call(d3.axisBottom(x));
+	// // Add the X Axis
+	//   svg.append("g")
+	//       .attr("transform", "translate("+ margin.left + ", " + (height+margin.top) + ")")
+	//       .call(d3.axisBottom(x));
 
-	  // Add the Y Axis
-	  svg.append("g")
-	      .attr("transform", "translate(" + margin.left + ", 0)")
-		  .call(d3.axisLeft(y));
+	//   // Add the Y Axis
+	//   svg.append("g")
+	//       .attr("transform", "translate(" + margin.left + ", "+margin.top+")")
+	// 	  .call(d3.axisLeft(y));
 
 
 
@@ -340,6 +404,7 @@ function createGenreChart(spotify_data, genres, genre_colours){
 // uncomment the cdn.rawgit.com versions and comment the cis.umassd.edu versions if you require all https data
 d3.queue()
     //.defer(d3.csv, "https://archive.org/download/cleaned_data/cleaned_data.csv")
-    .defer(d3.csv, "https://query.data.world/s/eyex2v4cn5aaumwxckvnplk2ccpmdz")
+    .defer(d3.csv, "https://query.data.world/s/shd2uyourazdpttig4vqh5jvp5cf6d")
+    //.defer(d3.csv, "https://query.data.world/s/sj4dq52f3gfho7ouikgmuq3bzzmr4q")
     .await(createVis);
 
