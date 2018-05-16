@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>DSC 530 Project</title>
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 10;
+            }
+            #page {
+                width: inherit;
+                height: inherit;
+                margin: 0;
+                padding: 0;
+            }
+            h1 {
+                margin: 0;
+                padding: 0;
+            }
+        </style>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v0.3.min.js"></script>
+  <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.css' rel='stylesheet' />
+  <style>
+        body { margin:0; padding:0; }
+        #map-overlay { position:absolute; width:960px; height: 500px }
+    </style>
+</head>
+<body width="100%" height="100%">
+
+  <h2> Spotify Dataset - Genre Trends Worldwide</h3>
+  <h4> Miraj Mahmood </h4>
+  <h4> Data Visualization (DSC 530/CIS 602-01) </h4>
+  <div style="width: 100%; display: table;">
+    <div style="display: table-row">
+
+     <div id="line_chart" style="display: table-cell;"></div>
+     <div id="genre_plot" style="display: table-cell;"> </div>
+   </div>
+  </div>
+ <div id="countries_selection"></div>
+ 
+</div>
+  <!-- Either add your own script or link to a separate js file here -->
+  <!-- <script type="text/javascript" src="vis.js"></script> -->
+  <script type="text/javascript" src="https://rawgit.com/mirajmahmood/Spotify-Genres-Worldwide/master/vis.js"></script>
+
+</body>
+</html>
